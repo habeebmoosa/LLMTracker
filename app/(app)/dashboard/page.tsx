@@ -16,11 +16,19 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { createClient } from "@/utils/supabase/client"
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
+
+interface Organization {
+  id: string
+  name: string
+  description: string
+}
 
 export default function Page() {
-  // const [user, setUser] = useState()
-  const [organizations, setOrganizations] = useState();
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [activeOrg, setActiveOrg] = useState<any>();
+  const [activeProject, setActiveProject] = useState();
 
   const supabase = createClient();
 
@@ -37,13 +45,49 @@ export default function Page() {
     setOrganizations(data.data)
   }
 
+  const fetchProjects = async () => {
+    const userData = await supabase.auth.getUser();
+    const user = userData.data.user;
+
+    const projectsData = await fetch(`/api/v1/projects?orgId=${activeOrg?.id}&userId=${user?.id}`);
+    const data = await projectsData.json();
+    console.log("projects logs")
+    setProjects(data.data);
+    console.log(data.data)
+  }
+
+  useEffect(() => {
+    if (organizations && organizations.length > 0) {
+      setActiveOrg(organizations[0])
+    }
+  }, [organizations])
+
+  useEffect(() => {
+    if (activeOrg) {
+      fetchProjects();
+    }
+  }, [activeOrg])
+
+  useEffect(() => {
+    if (projects && projects.length > 0) {
+      setActiveProject(projects[0])
+    }
+  }, [projects])
+
   useEffect(() => {
     fetchOrgs();
   }, [])
 
   return (
     <SidebarProvider>
-      <AppSidebar organizations={organizations} />
+      <AppSidebar
+        organizations={organizations}
+        projects={projects}
+        activeOrg={activeOrg}
+        setActiveOrg={setActiveOrg}
+        activeProject={activeProject}
+        setActiveProject={setActiveProject}
+      />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">

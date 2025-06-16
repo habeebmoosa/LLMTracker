@@ -155,15 +155,31 @@ const data = {
   ],
 }
 
-export function AppSidebar({ organizations }: any) {
+export function AppSidebar({
+  organizations,
+  projects,
+  activeOrg,
+  setActiveOrg,
+  activeProject,
+  setActiveProject
+}: any) {
   return (
     <Sidebar collapsible="icon" >
       <SidebarHeader>
-        <TeamSwitcher organizations={organizations} />
+        <TeamSwitcher
+          organizations={organizations}
+          activeOrg={activeOrg}
+          setActiveOrg={setActiveOrg}
+        />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavProjects
+          projects={projects}
+          activeProject={activeProject}
+          setActiveProject={setActiveProject}
+          activeOrg={activeOrg}
+        />
+        {/* <NavMain items={data.navMain} /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

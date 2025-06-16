@@ -4,33 +4,36 @@ import { NextResponse, NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
+        const orgId = searchParams.get('orgId');
         const userId = searchParams.get('userId');
 
-        if (!userId) {
-            return NextResponse.json({ error: "Missing user ID parameter" }, { status: 400 })
+        if (!userId || !orgId) {
+            return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
         }
 
         const supabase = await createClient();
 
         const { data, error } = await supabase
-            .from('organizations')
+            .from('projects')
             .select(`
                 id,
                 name,
                 description,
                 created_at,
                 updated_at,
-                owner_id,
+                organization_id,
+                created_by,
                 is_active,
                 settings
             `)
-            .eq('owner_id', userId)
-            .order('created_at', { ascending: true });
+            .eq('created_by', userId)
+            .eq('organization_id', orgId)
+            .order('created_at', { ascending: false });
 
         if (error) {
-            console.error("Error retrieving organizations:", error)
+            console.error("Error retrieving projects:", error)
             return NextResponse.json({
-                error: "Failed to retrieve organizations",
+                error: "Failed to retrieve projects",
                 details: error.message,
                 code: error.code,
                 hint: error.hint
@@ -40,7 +43,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ data });
 
     } catch (error) {
-        console.log("Error while retrieving organizations: ", error)
+        console.log("Error while retrieving projects: ", error)
         return NextResponse.json({
             error: "Internal server error",
             message: error instanceof Error ? error.message : String(error)
@@ -50,33 +53,38 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
-        const { name, description, owner_id, settings } = body;
+        const searchParams = request.nextUrl.searchParams;
+        const orgId = searchParams.get('orgId');
+        const userId = searchParams.get('userId');
 
-        if (!name || !owner_id) {
+        const body = await request.json();
+        const { name, description, settings, is_active } = body;
+
+        if (!name || !userId || !userId || !orgId) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
         const supabase = await createClient();
 
         const { data, error } = await supabase
-            .from('organizations')
+            .from('projects')
             .insert([
                 {
                     name,
                     description,
-                    owner_id,
+                    organization_id: orgId,
+                    created_by: userId,
                     settings: settings || {},
-                    is_active: true
+                    is_active: is_active || true
                 }
             ])
             .select()
             .single();
 
         if (error) {
-            console.error("Error creating organization:", error);
+            console.error("Error creating project:", error);
             return NextResponse.json({
-                error: "Failed to create organization",
+                error: "Failed to create project",
                 details: error.message,
                 code: error.code,
                 hint: error.hint
@@ -86,7 +94,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ data });
 
     } catch (error) {
-        console.error("Error while creating organization:", error);
+        console.error("Error while creating project:", error);
         return NextResponse.json({
             error: "Internal server error",
             message: error instanceof Error ? error.message : String(error)
@@ -96,32 +104,35 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
-        const body = await request.json();
-        const { id, name, description, settings, is_active } = body;
+        const searchParams = request.nextUrl.searchParams;
+        const projectId = searchParams.get('projectId');
 
-        if (!id) {
-            return NextResponse.json({ error: "Missing organization ID" }, { status: 400 });
+        const body = await request.json();
+        const { name, description, settings, is_active } = body;
+
+        if (!projectId) {
+            return NextResponse.json({ error: "Missing project ID" }, { status: 400 });
         }
 
         const supabase = await createClient();
 
-        // First verify the organization exists and user has permission
+        // First verify the project exists and user has permission
         const { data: existingOrg, error: fetchError } = await supabase
-            .from('organizations')
-            .select('owner_id')
-            .eq('id', id)
+            .from('projects')
+            .select('created_by')
+            .eq('id', projectId)
             .single();
 
         if (fetchError) {
             return NextResponse.json({
-                error: "Organization not found",
+                error: "project not found",
                 details: fetchError.message
             }, { status: 404 });
         }
 
-        // Update the organization
+        // Update the project
         const { data, error } = await supabase
-            .from('organizations')
+            .from('projects')
             .update({
                 name,
                 description,
@@ -129,14 +140,14 @@ export async function PUT(request: NextRequest) {
                 is_active,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', id)
+            .eq('id', projectId)
             .select()
             .single();
 
         if (error) {
-            console.error("Error updating organization:", error);
+            console.error("Error updating project:", error);
             return NextResponse.json({
-                error: "Failed to update organization",
+                error: "Failed to update project",
                 details: error.message,
                 code: error.code,
                 hint: error.hint
@@ -146,7 +157,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ data });
 
     } catch (error) {
-        console.error("Error while updating organization:", error);
+        console.error("Error while updating project:", error);
         return NextResponse.json({
             error: "Internal server error",
             message: error instanceof Error ? error.message : String(error)
@@ -157,48 +168,48 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
-        const id = searchParams.get('orgId');
+        const id = searchParams.get('projectId');
 
         if (!id) {
-            return NextResponse.json({ error: "Missing organization ID" }, { status: 400 });
+            return NextResponse.json({ error: "Missing project ID" }, { status: 400 });
         }
 
         const supabase = await createClient();
 
-        // First verify the organization exists
-        const { data: existingOrg, error: fetchError } = await supabase
-            .from('organizations')
-            .select('owner_id')
+        // First verify the project exists
+        const { data: existingProject, error: fetchError } = await supabase
+            .from('projects')
+            .select('created_by')
             .eq('id', id)
             .single();
 
         if (fetchError) {
             return NextResponse.json({
-                error: "Organization not found",
+                error: "project not found",
                 details: fetchError.message
             }, { status: 404 });
         }
 
         // Delete the organization
         const { error } = await supabase
-            .from('organizations')
+            .from('projects')
             .delete()
             .eq('id', id);
 
         if (error) {
-            console.error("Error deleting organization:", error);
+            console.error("Error deleting project:", error);
             return NextResponse.json({
-                error: "Failed to delete organization",
+                error: "Failed to delete project",
                 details: error.message,
                 code: error.code,
                 hint: error.hint
             }, { status: 500 });
         }
 
-        return NextResponse.json({ message: "Organization deleted successfully" });
+        return NextResponse.json({ message: "project deleted successfully" });
 
     } catch (error) {
-        console.error("Error while deleting organization:", error);
+        console.error("Error while deleting project:", error);
         return NextResponse.json({
             error: "Internal server error",
             message: error instanceof Error ? error.message : String(error)

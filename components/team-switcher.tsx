@@ -18,17 +18,31 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { AddOrganizationDialog } from "@/components/add-organization-dialog"
+import { AddOrganizationDialog } from "@/components/add-organization-dialog";
 
-export function TeamSwitcher({
-  organizations,
-}: {
+type Organizations = {
   organizations: {
     id: string
     name: string
     description: string
   }[]
-}) {
+}
+
+interface TeamSwitcherProps {
+  organizations: Organizations
+  activeOrg: {
+    id: string
+    name: string
+    description: string
+  } | null
+  setActiveOrg: (organization: { id: string; name: string; description: string }) => void;
+}
+
+export function TeamSwitcher({
+  organizations,
+  activeOrg,
+  setActiveOrg
+}: TeamSwitcherProps) {
   const { isMobile } = useSidebar()
   const [dialogOpen, setDialogOpen] = React.useState(false)
   
@@ -41,14 +55,14 @@ export function TeamSwitcher({
     description: string
   }
   
-  const [activeTeam, setActiveTeam] = React.useState<Team | null>(null)
+  // const [activeTeam, setActiveTeam] = React.useState<Team | null>(null)
 
-  React.useEffect(() => {
-    if (organizations && organizations.length > 0) {
-      // console.log("Setting active team to:", organizations[0])
-      setActiveTeam(organizations[0])
-    }
-  }, [organizations])
+  // React.useEffect(() => {
+  //   if (organizations && organizations.length > 0) {
+  //     // console.log("Setting active team to:", organizations[0])
+  //     setActiveTeam(organizations[0])
+  //   }
+  // }, [organizations])
 
   // console.log("Active Team:", activeTeam)
 
@@ -58,8 +72,8 @@ export function TeamSwitcher({
     setDialogOpen(true)
   }
 
-  if (!activeTeam) {
-    console.log("Returning null because activeTeam is:", activeTeam)
+  if (!organizations || !Array.isArray(organizations) || !activeOrg) {
+    console.log("Returning null because activeTeam is:", activeOrg)
     return (
       <>
         <AddOrganizationDialog open={dialogOpen} onOpenChange={setDialogOpen} />
@@ -94,8 +108,8 @@ export function TeamSwitcher({
                   <Command className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{activeTeam.name}</span>
-                  <span className="truncate text-xs">{activeTeam.description}</span>
+                  <span className="truncate font-medium">{activeOrg.name}</span>
+                  <span className="truncate text-xs">{activeOrg.description}</span>
                 </div>
                 <ChevronsUpDown className="ml-auto" />
               </SidebarMenuButton>
@@ -112,7 +126,7 @@ export function TeamSwitcher({
               {organizations.map((team, index) => (
                 <DropdownMenuItem
                   key={team.name}
-                  onClick={() => setActiveTeam(team)}
+                  onClick={() => setActiveOrg(team)}
                   className="gap-2 p-2"
                 >
                   <div className="flex size-6 items-center justify-center rounded-md border">
