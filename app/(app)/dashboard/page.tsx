@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar"
 import { createClient } from "@/utils/supabase/client"
 import { useEffect, useState } from "react";
+import { ProjectDashboard } from "./ProjectDashboard";
 
 interface Organization {
   id: string
@@ -24,11 +25,17 @@ interface Organization {
   description: string
 }
 
+interface Project {
+  id: string;
+  apiKey: string;
+  [key: string]: any;
+}
+
 export default function Page() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [activeOrg, setActiveOrg] = useState<any>();
-  const [activeProject, setActiveProject] = useState();
+  const [activeProject, setActiveProject] = useState<Project | undefined>();
 
   const supabase = createClient();
 
@@ -112,12 +119,12 @@ export default function Page() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-          </div>
-          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+          {/* {activeProject && activeProject.id && activeProject.apiKey ? (
+            <ProjectDashboard projectId={activeProject.id} />
+          ) : (
+            <div className="text-center text-muted-foreground">Select a project to view dashboard.</div>
+          )} */}
+          <ProjectDashboard projectId={activeProject?.id} />
         </div>
       </SidebarInset>
     </SidebarProvider>
