@@ -1,3 +1,5 @@
+'use client'
+
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -13,11 +15,35 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { createClient } from "@/utils/supabase/client"
+import { useEffect, useState } from "react"
 
 export default function Page() {
+  // const [user, setUser] = useState()
+  const [organizations, setOrganizations] = useState();
+
+  const supabase = createClient();
+
+  const fetchOrgs = async () => {
+    const userData = await supabase.auth.getUser();
+    const user = userData.data.user;
+
+    console.log(userData)
+    const orgData = await fetch(`/api/v1/organizations?userId=${user?.id}`);
+    const data = await orgData.json();
+    console.log("Here the log of LLM Tracker");
+    console.log(data.data)
+
+    setOrganizations(data.data)
+  }
+
+  useEffect(() => {
+    fetchOrgs();
+  }, [])
+
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar organizations={organizations} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">

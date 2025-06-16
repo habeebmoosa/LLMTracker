@@ -155,11 +155,11 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ organizations }: any) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" >
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher organizations={organizations} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
