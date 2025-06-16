@@ -60,6 +60,16 @@ export function NavProjects({
     setDialogOpen(true)
   }
 
+  const handleDeleteProject = async (id: any) => {
+    const response = await fetch(`/api/v1/projects?projectId=${id}`, {
+      method: 'DELETE',
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    console.log(response.json())
+  }
+
   return (
     <>
     <AddProjectDialog open={dialogOpen} onOpenChange={setDialogOpen} activeOrg={activeOrg} />
@@ -99,7 +109,11 @@ export function NavProjects({
                   <span>Share Project</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={(e: React.MouseEvent)=>{
+                  e.preventDefault()
+                  e.stopPropagation()
+                  handleDeleteProject(item.id)
+                }}>
                   <Trash2 className="text-muted-foreground" />
                   <span>Delete Project</span>
                 </DropdownMenuItem>
