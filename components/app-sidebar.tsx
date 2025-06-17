@@ -155,14 +155,25 @@ const data = {
   ],
 }
 
+interface AppSidebarProps {
+  organizations: any
+  projects: any
+  activeOrg: any
+  setActiveOrg: any
+  activeProject: any
+  setActiveProject: any
+  userData: any
+}
+
 export function AppSidebar({
   organizations,
   projects,
   activeOrg,
   setActiveOrg,
   activeProject,
-  setActiveProject
-}: any) {
+  setActiveProject,
+  userData
+}: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" >
       <SidebarHeader>
@@ -182,7 +193,7 @@ export function AppSidebar({
         {/* <NavMain items={data.navMain} /> */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData}/>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar"
 import { createClient } from "@/utils/supabase/client"
 import { useEffect, useState } from "react";
-import { ProjectDashboard } from "./ProjectDashboard";
+import LLMUsageDashboard from "./ProjectDashboard";
 
 interface Organization {
   id: string
@@ -31,20 +31,25 @@ interface Project {
   [key: string]: any;
 }
 
-export default function Page() {
+export default function  Page() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [activeOrg, setActiveOrg] = useState<any>();
   const [activeProject, setActiveProject] = useState<Project | undefined>();
+  const [user, setUser] = useState<any>(null);
 
   const supabase = createClient();
 
-  const fetchOrgs = async () => {
+  const fetchUser = async () => {
     const userData = await supabase.auth.getUser();
-    const user = userData.data.user;
+    setUser(userData.data.user);
+    return userData.data.user;
+  }
 
-    console.log(userData)
-    const orgData = await fetch(`/api/v1/organizations?userId=${user?.id}`);
+  const fetchOrgs = async () => {
+    if (!user) return;
+    
+    const orgData = await fetch(`/api/v1/organizations?userId=${user.id}`);
     const data = await orgData.json();
     console.log("Here the log of LLM Tracker");
     console.log(data.data)
@@ -53,15 +58,27 @@ export default function Page() {
   }
 
   const fetchProjects = async () => {
-    const userData = await supabase.auth.getUser();
-    const user = userData.data.user;
+    if (!user || !activeOrg) return;
 
-    const projectsData = await fetch(`/api/v1/projects?orgId=${activeOrg?.id}&userId=${user?.id}`);
+    const projectsData = await fetch(`/api/v1/projects?orgId=${activeOrg.id}&userId=${user.id}`);
     const data = await projectsData.json();
     console.log("projects logs")
     setProjects(data.data);
     console.log(data.data)
   }
+
+  useEffect(() => {
+    const initializeData = async () => {
+      await fetchUser();
+    };
+    initializeData();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchOrgs();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (organizations && organizations.length > 0) {
@@ -81,10 +98,6 @@ export default function Page() {
     }
   }, [projects])
 
-  useEffect(() => {
-    fetchOrgs();
-  }, [])
-
   return (
     <SidebarProvider>
       <AppSidebar
@@ -94,6 +107,7 @@ export default function Page() {
         setActiveOrg={setActiveOrg}
         activeProject={activeProject}
         setActiveProject={setActiveProject}
+        userData={user}
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -124,7 +138,13 @@ export default function Page() {
           ) : (
             <div className="text-center text-muted-foreground">Select a project to view dashboard.</div>
           )} */}
-          <ProjectDashboard projectId={activeProject?.id} />
+          <LLMUsageDashboard project={activeProject} />
+
+          {/* <SectionCards />
+          <div className="px-4 lg:px-6">
+            <ChartAreaInteractive />
+          </div>
+          <DataTable data={data} /> */}
         </div>
       </SidebarInset>
     </SidebarProvider>
