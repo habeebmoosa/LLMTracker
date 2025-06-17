@@ -82,14 +82,14 @@ export function AddProjectDialog({
         throw new Error("Failed to create project")
       }
 
-      toast("Project created successfully");
+      toast.success("Project created successfully");
       
       setOpen(false)
       form.reset()
       router.refresh()
     } catch (error) {
       console.error("Error creating project:", error)
-      toast("Failed to create project");
+      toast.error("Failed to create project");
     } finally {
       setIsSubmitting(false)
     }

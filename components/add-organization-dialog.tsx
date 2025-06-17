@@ -81,14 +81,14 @@ export function AddOrganizationDialog({
         throw new Error("Failed to create organization")
       }
 
-      toast("Organization created successfully");
+      toast.success("Organization created successfully");
       
       setOpen(false)
       form.reset()
       router.refresh()
     } catch (error) {
       console.error("Error creating organization:", error)
-      toast("Failed to create organization");
+      toast.error("Failed to create organization");
     } finally {
       setIsSubmitting(false)
     }
