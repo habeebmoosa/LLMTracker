@@ -1,6 +1,7 @@
 'use client'
 
 import { AppSidebar } from "@/components/app-sidebar"
+import LLMUsageDashboard from "@/components/project-dashboard"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,7 +18,6 @@ import {
 } from "@/components/ui/sidebar"
 import { createClient } from "@/utils/supabase/client"
 import { useEffect, useState } from "react";
-import LLMUsageDashboard from "./ProjectDashboard";
 
 interface Organization {
   id: string
