@@ -163,6 +163,7 @@ interface AppSidebarProps {
   activeProject: any
   setActiveProject: any
   userData: any
+  onProjectDeleted: any
 }
 
 export function AppSidebar({
@@ -172,7 +173,8 @@ export function AppSidebar({
   setActiveOrg,
   activeProject,
   setActiveProject,
-  userData
+  userData,
+  onProjectDeleted
 }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" >
@@ -193,7 +195,7 @@ export function AppSidebar({
         {/* <NavMain items={data.navMain} /> */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={userData}/>
+        <NavUser user={userData} onProjectDeleted={onProjectDeleted} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

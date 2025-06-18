@@ -40,16 +40,12 @@ export default function  Page() {
 
   const supabase = createClient();
 
-  const fetchUser = async () => {
-    const userData = await supabase.auth.getUser();
-    setUser(userData.data.user);
-    return userData.data.user;
-  }
-
   const fetchOrgs = async () => {
-    if (!user) return;
-    
-    const orgData = await fetch(`/api/v1/organizations?userId=${user.id}`);
+    const userData = await supabase.auth.getUser();
+    const user = userData.data.user;
+
+    console.log(userData)
+    const orgData = await fetch(`/api/v1/organizations?userId=${user?.id}`);
     const data = await orgData.json();
     console.log("Here the log of LLM Tracker");
     console.log(data.data)
@@ -58,27 +54,17 @@ export default function  Page() {
   }
 
   const fetchProjects = async () => {
-    if (!user || !activeOrg) return;
+    const userData = await supabase.auth.getUser();
+    const user = userData.data.user;
 
-    const projectsData = await fetch(`/api/v1/projects?orgId=${activeOrg.id}&userId=${user.id}`);
+    const projectsData = await fetch(`/api/v1/projects?orgId=${activeOrg?.id}&userId=${user?.id}`);
     const data = await projectsData.json();
     console.log("projects logs")
     setProjects(data.data);
     console.log(data.data)
   }
 
-  useEffect(() => {
-    const initializeData = async () => {
-      await fetchUser();
-    };
-    initializeData();
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      fetchOrgs();
-    }
-  }, [user]);
+  const onProjectDeleted = () => fetchProjects();
 
   useEffect(() => {
     if (organizations && organizations.length > 0) {
@@ -98,6 +84,10 @@ export default function  Page() {
     }
   }, [projects])
 
+  useEffect(() => {
+    fetchOrgs();
+  }, [])
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -108,6 +98,7 @@ export default function  Page() {
         activeProject={activeProject}
         setActiveProject={setActiveProject}
         userData={user}
+        onProjectDeleted={onProjectDeleted}
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -117,7 +108,7 @@ export default function  Page() {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            <Breadcrumb>
+            {/* <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="#">
@@ -129,7 +120,7 @@ export default function  Page() {
                   <BreadcrumbPage>Data Fetching</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
-            </Breadcrumb>
+            </Breadcrumb> */}
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">

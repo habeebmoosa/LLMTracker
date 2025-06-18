@@ -74,19 +74,21 @@ export default function LLMUsageDashboard(
         setLoading(true);
         setError(null);
         console.log(project)
-        
-        const response = await fetch(`/api/v1/usage?projectId=${project.project?.id}`);
-        if (!response.ok) {
-          toast('Failed to fetch usage data');
+
+        if (project.project?.id) {
+          const response = await fetch(`/api/v1/usage?projectId=${project.project?.id}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch usage data');
+          }
+
+          const result = await response.json();
+          if (result.error) {
+            // throw new Error(result.error);
+            throw new Error(result.error)
+          }
+
+          setUsage(result.data || []);
         }
-        
-        const result = await response.json();
-        if (result.error) {
-          // throw new Error(result.error);
-          toast.error(result.error)
-        }
-        
-        setUsage(result.data || []);
       } catch (err) {
         console.error('Error fetching usage data:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch usage data');
@@ -180,7 +182,7 @@ export default function LLMUsageDashboard(
   const MetricCard = ({ title, value, change, icon: Icon, format = (v: any) => v }: any) => {
     const isPositive = change > 0;
     const isNegative = change < 0;
-    
+
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -310,7 +312,7 @@ export default function LLMUsageDashboard(
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium text-muted-foreground">Error Rate</CardTitle>
@@ -369,17 +371,17 @@ export default function LLMUsageDashboard(
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="date" className="stroke-muted-foreground" />
                       <YAxis className="stroke-muted-foreground" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px'
                         }}
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey={selectedMetric} 
-                        stroke="hsl(var(--primary))" 
+                      <Line
+                        type="monotone"
+                        dataKey={selectedMetric}
+                        stroke="hsl(var(--primary))"
                         strokeWidth={2}
                         dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
                       />
@@ -472,7 +474,7 @@ export default function LLMUsageDashboard(
                         const avgLatency = Math.round(modelData.reduce((sum, u) => sum + u.request_duration_ms, 0) / count);
                         const totalCost = modelData.reduce((sum, u) => sum + u.total_cost, 0);
                         const successRate = (modelData.filter(u => u.status_code === 200).length / count) * 100;
-                        
+
                         return (
                           <tr key={model} className="border-b hover:bg-muted/50">
                             <td className="py-3 px-4 font-medium">{model}</td>
@@ -553,9 +555,9 @@ export default function LLMUsageDashboard(
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="date" className="stroke-muted-foreground" />
                       <YAxis className="stroke-muted-foreground" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px'
                         }}
