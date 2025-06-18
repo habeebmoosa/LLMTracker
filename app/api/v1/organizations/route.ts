@@ -179,6 +179,22 @@ export async function DELETE(request: NextRequest) {
             }, { status: 404 });
         }
 
+        // Delete associated projects first
+        const { error: projectsError } = await supabase
+            .from('projects')
+            .delete()
+            .eq('organization_id', id);
+
+        if (projectsError) {
+            console.error("Error deleting associated projects:", projectsError);
+            return NextResponse.json({
+                error: "Failed to delete associated projects",
+                details: projectsError.message,
+                code: projectsError.code,
+                hint: projectsError.hint
+            }, { status: 500 });
+        }
+
         // Delete the organization
         const { error } = await supabase
             .from('organizations')
@@ -195,7 +211,7 @@ export async function DELETE(request: NextRequest) {
             }, { status: 500 });
         }
 
-        return NextResponse.json({ message: "Organization deleted successfully" });
+        return NextResponse.json({ message: "Organization and associated projects deleted successfully" });
 
     } catch (error) {
         console.error("Error while deleting organization:", error);

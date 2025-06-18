@@ -3,9 +3,8 @@
 import { useState } from "react"
 import {
   BadgeCheck,
-  Bell,
   ChevronsUpDown,
-  CreditCard,
+  Settings,
   LogOut,
   Sparkles,
 } from "lucide-react"
@@ -33,16 +32,26 @@ import {
 import { createClient } from "@/utils/supabase/client"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { ConfirmAlertDialog } from "./confirm-alert-dialog";
+import { ConfirmAlertDialog } from "./confirm-alert-dialog"
+import { OrgSettingsDialog } from "./org-settings-dialog"
+
+interface NavUserProps {
+  user: any
+  projects: any
+  activeOrg: any
+}
 
 export function NavUser({
   user,
-}: any) {
+  projects,
+  activeOrg
+}: NavUserProps) {
   const { isMobile } = useSidebar();
   const supabase = createClient();
   const router = useRouter();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 
   const signOut = async () => {
     setIsLoggingOut(true)
@@ -116,13 +125,9 @@ export function NavUser({
                   <BadgeCheck />
                   Account
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <CreditCard />
-                  Billing
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Bell />
-                  Notifications
+                <DropdownMenuItem onClick={() => setShowSettingsDialog(true)}>
+                  <Settings />
+                  Organization Settings
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
@@ -146,6 +151,13 @@ export function NavUser({
         variant="destructive"
         icon={<LogOut className="h-4 w-4" />}
         isLoading={isLoggingOut}
+      />
+
+      <OrgSettingsDialog
+        open={showSettingsDialog}
+        onOpenChange={setShowSettingsDialog}
+        organization={activeOrg}
+        projects={projects}
       />
     </>
   )

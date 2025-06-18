@@ -6,7 +6,9 @@ import {
   MoreHorizontal,
   Trash2,
   FolderClosed,
-  Plus
+  Plus,
+  Pencil,
+  KeyRound
 } from "lucide-react"
 
 import {
@@ -25,7 +27,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AddProjectDialog } from "./add-project-dialog";
 import { ConfirmAlertDialog } from "./confirm-alert-dialog";
 import { toast } from "sonner";
@@ -142,10 +144,10 @@ export function NavProjects({
                 isActive={activeProject?.id === item.id}
                 onClick={() => setActiveProject(item)}
               >
-                <a href={'#'}>
+                <div className="cursor-pointer">
                   <FolderClosed />
                   <span>{item.name}</span>
-                </a>
+                </div>
               </SidebarMenuButton>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -160,12 +162,12 @@ export function NavProjects({
                   align={isMobile ? "end" : "start"}
                 >
                   <DropdownMenuItem>
-                    <Folder className="text-muted-foreground" />
-                    <span>View Project</span>
+                    <Pencil className="text-muted-foreground" />
+                    <span>Edit Project</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Forward className="text-muted-foreground" />
-                    <span>Share Project</span>
+                    <KeyRound className="text-muted-foreground" />
+                    <span>Project API Key</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 

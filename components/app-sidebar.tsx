@@ -195,7 +195,12 @@ export function AppSidebar({
         {/* <NavMain items={data.navMain} /> */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={userData} onProjectDeleted={onProjectDeleted} />
+        <NavUser
+          user={userData}
+          // onProjectDeleted={onProjectDeleted}
+          activeOrg={activeOrg}
+          projects={projects}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
