@@ -16,14 +16,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { createClient } from "@/utils/supabase/client"
 import { useEffect, useState } from "react";
-
-interface Organization {
-  id: string
-  name: string
-  description: string
-}
+import { useSession } from "next-auth/react";
 
 interface Project {
   id: string;
@@ -37,34 +31,31 @@ export default function  Page() {
   const [activeOrg, setActiveOrg] = useState<any>();
   const [activeProject, setActiveProject] = useState<Project | undefined>();
   const [user, setUser] = useState<any>(null);
+  const { data: session, status } = useSession();
 
-  const supabase = createClient();
-
-  const fetchOrgs = async () => {
-    const userData = await supabase.auth.getUser();
-    const user = userData.data.user;
-
-    console.log(userData)
-    const orgData = await fetch(`/api/v1/organizations?userId=${user?.id}`);
+  const fetchOrgs = async (userId: string) => {
+    const orgData = await fetch(`/api/v1/organizations?userId=${userId}`);
     const data = await orgData.json();
-    console.log("Here the log of LLM Tracker");
-    console.log(data.data)
-
-    setOrganizations(data.data)
+    setOrganizations(data.data || []);
   }
 
-  const fetchProjects = async () => {
-    const userData = await supabase.auth.getUser();
-    const user = userData.data.user;
-
-    const projectsData = await fetch(`/api/v1/projects?orgId=${activeOrg?.id}&userId=${user?.id}`);
+  const fetchProjects = async (userId: string, orgId: string) => {
+    const projectsData = await fetch(`/api/v1/projects?orgId=${orgId}&userId=${userId}`);
     const data = await projectsData.json();
-    console.log("projects logs")
-    setProjects(data.data);
-    console.log(data.data)
+    console.log("it's project data", data)
+    setProjects(data.data || []);
   }
 
-  const onProjectDeleted = () => fetchProjects();
+  const onProjectDeleted = () => {
+    if (user && activeOrg) fetchProjects(user.id, activeOrg.id);
+  };
+
+  useEffect(() => {
+    if (session?.user) {
+      setUser(session.user);
+      fetchOrgs(session.user.id);
+    }
+  }, [session]);
 
   useEffect(() => {
     if (organizations && organizations.length > 0) {
@@ -73,20 +64,16 @@ export default function  Page() {
   }, [organizations])
 
   useEffect(() => {
-    if (activeOrg) {
-      fetchProjects();
+    if (activeOrg && user) {
+      fetchProjects(user.id, activeOrg.id);
     }
-  }, [activeOrg])
+  }, [activeOrg, user])
 
   useEffect(() => {
     if (projects && projects.length > 0) {
       setActiveProject(projects[0])
     }
   }, [projects])
-
-  useEffect(() => {
-    fetchOrgs();
-  }, [])
 
   return (
     <SidebarProvider>
@@ -104,38 +91,10 @@ export default function  Page() {
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            {/* <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb> */}
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          {/* {activeProject && activeProject.id && activeProject.apiKey ? (
-            <ProjectDashboard projectId={activeProject.id} />
-          ) : (
-            <div className="text-center text-muted-foreground">Select a project to view dashboard.</div>
-          )} */}
           <LLMUsageDashboard project={activeProject} />
-
-          {/* <SectionCards />
-          <div className="px-4 lg:px-6">
-            <ChartAreaInteractive />
-          </div>
-          <DataTable data={data} /> */}
         </div>
       </SidebarInset>
     </SidebarProvider>

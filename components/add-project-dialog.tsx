@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner";
-import { createClient } from "@/utils/supabase/client"
+import { useSession } from "next-auth/react";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -48,8 +48,7 @@ export function AddProjectDialog({
   const [internalOpen, setInternalOpen] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const router = useRouter()
-
-  const supabase = createClient();
+  const { data: session } = useSession();
 
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = controlledOnOpenChange || setInternalOpen
@@ -65,10 +64,9 @@ export function AddProjectDialog({
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true)
     try {
-      const userData = await supabase.auth.getUser();
-      const user = userData.data.user;
-
-      const response = await fetch(`/api/v1/projects?orgId=${activeOrg?.id}&userId=${user?.id}`, {
+      const user = session?.user;
+      if (!user?.id) throw new Error("User not found in session");
+      const response = await fetch(`/api/v1/projects?orgId=${activeOrg?.id}&userId=${user.id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,13 +75,10 @@ export function AddProjectDialog({
           ...values,
         }),
       })
-
       if (!response.ok) {
         throw new Error("Failed to create project")
       }
-
       toast.success("Project created successfully");
-      
       setOpen(false)
       form.reset()
       router.refresh()

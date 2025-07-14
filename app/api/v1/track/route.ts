@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from '@/utils/supabase/server'
+import prisma from '@/lib/prisma'
 import { getProviderFromModel, getModelRates, ProviderType, ModelType } from '@/utils/constants/models'
 
 export async function POST(request: Request) {
@@ -7,11 +7,17 @@ export async function POST(request: Request) {
         const body = await request.json()
         const startTime = Date.now()
 
-        if (!body.model || body.prompt_tokens === undefined || body.completion_tokens === undefined || !body.api_key_id || !body.project_id) {
+        if (!body.model || body.prompt_tokens === undefined || body.completion_tokens === undefined || !body.api_key) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
         }
 
-        const supabase = await createClient()
+        // Verify project exists by projectKey (api_key)
+        const project = await prisma.project.findUnique({
+            where: { projectKey: body.api_key },
+        });
+        if (!project) {
+            return NextResponse.json({ error: "Invalid project key" }, { status: 404 });
+        }
 
         const total_tokens = (body.prompt_tokens || 0) + (body.completion_tokens || 0)
 
@@ -34,46 +40,34 @@ export async function POST(request: Request) {
         const total_cost = input_cost + output_cost;
 
         const usageData = {
-            api_key_id: body.api_key_id,
-            project_id: body.project_id,
+            projectKey: body.api_key,
+            projectId: project.id,
             model: body.model,
             provider: provider,
-            prompt_tokens: body.prompt_tokens,
-            completion_tokens: body.completion_tokens,
-            total_tokens: total_tokens,
-            input_cost: input_cost,
-            output_cost: output_cost,
-            total_cost: total_cost,
+            promptTokens: body.prompt_tokens,
+            completionTokens: body.completion_tokens,
+            totalTokens: total_tokens,
+            inputCost: input_cost,
+            outputCost: output_cost,
+            totalCost: total_cost,
             currency: body.currency || 'USD',
-            request_duration_ms: Date.now() - startTime,
-            status_code: 200,
-            error_message: null
+            requestDurationMs: Date.now() - startTime,
+            statusCode: 200,
+            errorMessage: null
         }
 
-        const { data, error } = await supabase
-            .from('usage_logs')
-            .insert([usageData])
-            .select()
-            .single()
-
-        if (error) {
-            console.error("Error storing usage data:", error)
-            return NextResponse.json({
-                error: "Failed to store usage data",
-                details: error.message,
-                code: error.code,
-                hint: error.hint
-            }, { status: 500 })
-        }
+        const data = await prisma.usageLog.create({
+            data: usageData,
+        })
 
         return NextResponse.json({
             id: data.id,
             provider: data.provider,
             model: data.model,
-            prompt_tokens: data.prompt_tokens,
-            completion_tokens: data.completion_tokens,
-            total_tokens: data.total_tokens,
-            total_cost: data.total_cost,
+            prompt_tokens: data.promptTokens,
+            completion_tokens: data.completionTokens,
+            total_tokens: data.totalTokens,
+            total_cost: data.totalCost,
             currency: data.currency,
             timestamp: data.timestamp,
             status: "success"

@@ -29,16 +29,24 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { createClient } from "@/utils/supabase/client"
-import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { ConfirmAlertDialog } from "./confirm-alert-dialog"
 import { OrgSettingsDialog } from "./org-settings-dialog"
+import { signOut as nextAuthSignOut } from "next-auth/react";
+import { toast } from "sonner";
 
 interface NavUserProps {
   user: any
   projects: any
   activeOrg: any
+}
+
+// Utility to get initials from a name
+function getInitials(name?: string) {
+  if (!name) return "?";
+  const words = name.trim().split(" ");
+  if (words.length === 1) return words[0][0]?.toUpperCase() || "?";
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
 }
 
 export function NavUser({
@@ -47,7 +55,6 @@ export function NavUser({
   activeOrg
 }: NavUserProps) {
   const { isMobile } = useSidebar();
-  const supabase = createClient();
   const router = useRouter();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -56,9 +63,7 @@ export function NavUser({
   const signOut = async () => {
     setIsLoggingOut(true)
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      console.log('Signed out successfully')
+      await nextAuthSignOut({ redirect: false });
       toast("Signed out successfully")
     } catch (error) {
       console.error('Error signing out:', error)
@@ -73,6 +78,8 @@ export function NavUser({
     setShowLogoutDialog(true)
   }
 
+  if (!user) return null;
+
   return (
     <>
       <SidebarMenu>
@@ -84,12 +91,16 @@ export function NavUser({
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
                 <Avatar className="h-8 w-8 rounded-lg">
-                  {/* <AvatarImage src={user.avatar} alt={user.name} /> */}
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  {user.avatar ? (
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                  ) : (
+                    <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
+                  )}
+                  
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  {/* <span className="truncate font-medium">{user.name}</span> */}
-                  {/* <span className="truncate text-xs">{user.email}</span> */}
+                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate text-xs">{user.email}</span>
                 </div>
                 <ChevronsUpDown className="ml-auto size-4" />
               </SidebarMenuButton>
@@ -103,8 +114,11 @@ export function NavUser({
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="h-8 w-8 rounded-lg">
-                    {/* <AvatarImage src={user.avatar} alt={user.name} /> */}
-                    <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                    {user.avatar ? (
+                      <AvatarImage src={user.avatar} alt={user.name} />
+                    ) : (
+                      <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
+                    )}
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     {/* <span className="truncate font-medium">{user.name}</span> */}

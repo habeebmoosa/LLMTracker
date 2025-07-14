@@ -41,15 +41,18 @@ interface UsageData {
   output_cost: number;
 }
 
-const formatCurrency = (value: number) =>
-  `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const formatCurrency = (value: number | undefined | null) => {
+  if (typeof value !== "number" || isNaN(value)) return "$0.00";
+  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
   return `${d.getMonth() + 1}/${d.getDate()}`;
 };
 
-const formatNumber = (num: number) => {
+const formatNumber = (num: number | undefined | null) => {
+  if (typeof num !== "number" || isNaN(num)) return "0";
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
   if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
   return num.toString();

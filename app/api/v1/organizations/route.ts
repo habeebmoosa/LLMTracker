@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
+import prisma from '@/lib/prisma';
 import { NextResponse, NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -10,35 +10,21 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Missing user ID parameter" }, { status: 400 })
         }
 
-        const supabase = await createClient();
-
-        const { data, error } = await supabase
-            .from('organizations')
-            .select(`
-                id,
-                name,
-                description,
-                created_at,
-                updated_at,
-                owner_id,
-                is_active,
-                settings
-            `)
-            .eq('owner_id', userId)
-            .order('created_at', { ascending: true });
-
-        if (error) {
-            console.error("Error retrieving organizations:", error)
-            return NextResponse.json({
-                error: "Failed to retrieve organizations",
-                details: error.message,
-                code: error.code,
-                hint: error.hint
-            }, { status: 500 })
-        }
-
+        const data = await prisma.organization.findMany({
+            where: { ownerId: userId },
+            orderBy: { createdAt: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                createdAt: true,
+                updatedAt: true,
+                ownerId: true,
+                isActive: true,
+                settings: true,
+            },
+        });
         return NextResponse.json({ data });
-
     } catch (error) {
         console.log("Error while retrieving organizations: ", error)
         return NextResponse.json({
@@ -57,34 +43,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        const supabase = await createClient();
-
-        const { data, error } = await supabase
-            .from('organizations')
-            .insert([
-                {
-                    name,
-                    description,
-                    owner_id,
-                    settings: settings || {},
-                    is_active: true
-                }
-            ])
-            .select()
-            .single();
-
-        if (error) {
-            console.error("Error creating organization:", error);
-            return NextResponse.json({
-                error: "Failed to create organization",
-                details: error.message,
-                code: error.code,
-                hint: error.hint
-            }, { status: 500 });
-        }
-
+        const data = await prisma.organization.create({
+            data: {
+                name,
+                description,
+                ownerId: owner_id,
+                settings: settings || {},
+                isActive: true,
+            },
+        });
         return NextResponse.json({ data });
-
     } catch (error) {
         console.error("Error while creating organization:", error);
         return NextResponse.json({
@@ -103,48 +71,29 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: "Missing organization ID" }, { status: 400 });
         }
 
-        const supabase = await createClient();
-
-        // First verify the organization exists and user has permission
-        const { data: existingOrg, error: fetchError } = await supabase
-            .from('organizations')
-            .select('owner_id')
-            .eq('id', id)
-            .single();
-
-        if (fetchError) {
+        // First verify the organization exists
+        const existingOrg = await prisma.organization.findUnique({
+            where: { id },
+            select: { ownerId: true },
+        });
+        if (!existingOrg) {
             return NextResponse.json({
                 error: "Organization not found",
-                details: fetchError.message
+                details: "No organization with this ID"
             }, { status: 404 });
         }
 
-        // Update the organization
-        const { data, error } = await supabase
-            .from('organizations')
-            .update({
+        const data = await prisma.organization.update({
+            where: { id },
+            data: {
                 name,
                 description,
                 settings,
-                is_active,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error("Error updating organization:", error);
-            return NextResponse.json({
-                error: "Failed to update organization",
-                details: error.message,
-                code: error.code,
-                hint: error.hint
-            }, { status: 500 });
-        }
-
+                isActive: is_active,
+                updatedAt: new Date(),
+            },
+        });
         return NextResponse.json({ data });
-
     } catch (error) {
         console.error("Error while updating organization:", error);
         return NextResponse.json({
@@ -163,56 +112,23 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: "Missing organization ID" }, { status: 400 });
         }
 
-        const supabase = await createClient();
-
         // First verify the organization exists
-        const { data: existingOrg, error: fetchError } = await supabase
-            .from('organizations')
-            .select('owner_id')
-            .eq('id', id)
-            .single();
-
-        if (fetchError) {
+        const existingOrg = await prisma.organization.findUnique({
+            where: { id },
+            select: { ownerId: true },
+        });
+        if (!existingOrg) {
             return NextResponse.json({
                 error: "Organization not found",
-                details: fetchError.message
+                details: "No organization with this ID"
             }, { status: 404 });
         }
 
         // Delete associated projects first
-        const { error: projectsError } = await supabase
-            .from('projects')
-            .delete()
-            .eq('organization_id', id);
-
-        if (projectsError) {
-            console.error("Error deleting associated projects:", projectsError);
-            return NextResponse.json({
-                error: "Failed to delete associated projects",
-                details: projectsError.message,
-                code: projectsError.code,
-                hint: projectsError.hint
-            }, { status: 500 });
-        }
-
+        await prisma.project.deleteMany({ where: { organizationId: id } });
         // Delete the organization
-        const { error } = await supabase
-            .from('organizations')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error("Error deleting organization:", error);
-            return NextResponse.json({
-                error: "Failed to delete organization",
-                details: error.message,
-                code: error.code,
-                hint: error.hint
-            }, { status: 500 });
-        }
-
+        await prisma.organization.delete({ where: { id } });
         return NextResponse.json({ message: "Organization and associated projects deleted successfully" });
-
     } catch (error) {
         console.error("Error while deleting organization:", error);
         return NextResponse.json({

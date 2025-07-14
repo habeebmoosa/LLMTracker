@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner";
-import { createClient } from "@/utils/supabase/client"
+import { useSession } from "next-auth/react";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -46,8 +46,7 @@ export function AddOrganizationDialog({
   const [internalOpen, setInternalOpen] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const router = useRouter()
-
-  const supabase = createClient();
+  const { data: session } = useSession();
 
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = controlledOnOpenChange || setInternalOpen
@@ -63,9 +62,8 @@ export function AddOrganizationDialog({
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true)
     try {
-      const userData = await supabase.auth.getUser();
-      const user = userData.data.user;
-
+      const user = session?.user;
+      if (!user?.id) throw new Error("User not found in session");
       const response = await fetch("/api/v1/organizations", {
         method: "POST",
         headers: {
@@ -73,16 +71,13 @@ export function AddOrganizationDialog({
         },
         body: JSON.stringify({
           ...values,
-          owner_id: user?.id,
+          owner_id: user.id,
         }),
       })
-
       if (!response.ok) {
         throw new Error("Failed to create organization")
       }
-
       toast.success("Organization created successfully");
-      
       setOpen(false)
       form.reset()
       router.refresh()

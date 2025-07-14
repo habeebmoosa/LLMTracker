@@ -36,6 +36,7 @@ type Projects = {
   id: string
   name: string
   description: string
+  projectKey: string
 }[]
 
 interface NavProjectsProps {
@@ -113,6 +114,15 @@ export function NavProjects({
     setShowProjectDeleteDialog(true)
   }
 
+  const handleCopyApiKey = async (projectKey: string) => {
+    try {
+      await navigator.clipboard.writeText(projectKey);
+      toast("API Key copied!");
+    } catch (err) {
+      toast("Failed to copy API Key");
+    }
+  };
+
   return (
     <>
       <AddProjectDialog
@@ -165,7 +175,9 @@ export function NavProjects({
                     <Pencil className="text-muted-foreground" />
                     <span>Edit Project</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleCopyApiKey(item.projectKey)}
+                  >
                     <KeyRound className="text-muted-foreground" />
                     <span>Project API Key</span>
                   </DropdownMenuItem>

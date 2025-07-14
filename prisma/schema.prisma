@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  avatar    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  organizations Organization[]
+  projects    Project[]
+  isActive    Boolean  @default(true) @map("is_active")
+  settings    Json?    @default("{}")
+  lastLogin   DateTime? @map("last_login")
+  lastActive  DateTime? @map("last_active")
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(255)
+  description String?
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  isActive    Boolean  @default(true) @map("is_active")
+  settings    Json?    @default("{}")
+  projects    Project[]
+}
+
+model Project {
+  id            String   @id @default(uuid())
+  name          String   @db.VarChar(255)
+  description   String?
+  organizationId String
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy     String
+  creator       User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  isActive      Boolean  @default(true) @map("is_active")
+  settings      Json?    @default("{}")
+  projectKey    String   @default(uuid()) @unique
+  usageLogs     UsageLog[]
+}
+
+model UsageLog {
+  id               String   @id @default(uuid())
+  projectId        String
+  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectKey       String   // Redundant, but for direct lookup if needed
+  timestamp        DateTime @default(now())
+  model            String   @db.VarChar(255)
+  provider         String   @db.VarChar(100)
+  promptTokens     Int?     @default(0)
+  completionTokens Int?     @default(0)
+  totalTokens      Int?     @default(0)
+  totalCost        Decimal? @default(0) @db.Decimal(10, 6)
+  currency         String?  @default("USD") @db.VarChar(3)
+  requestDurationMs Int?
+  statusCode       Int?
+  errorMessage     String?
+  inputCost        Decimal? @default(0)
+  outputCost       Decimal? @default(0)
+}
